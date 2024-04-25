@@ -88,7 +88,7 @@ def grootle_prove(M, l, C_offset, privkey, n, m, message):
     # print('Points: ')
     # print(do_points[i])
 
-    proof.A = dumber25519.multiexp(do_scalars, do_points)
+    proof.A = dumber25519.multiexp_naive(do_scalars, do_points)
 
     # Commit to decomposition bits: sigma, a*(1-2*sigma)
     decomp_l = dumber25519.decompose(l, n, m)
@@ -113,7 +113,7 @@ def grootle_prove(M, l, C_offset, privkey, n, m, message):
     # print('Points: ')
     # print(da_points[i])
 
-    proof.B = dumber25519.multiexp(da_scalars, da_points)
+    proof.B = dumber25519.multiexp_naive(da_scalars, da_points)
 
     proof.A = Scalar(8).invert() * proof.A
     proof.B = Scalar(8).invert() * proof.B
@@ -163,7 +163,7 @@ def grootle_prove(M, l, C_offset, privkey, n, m, message):
             data_x_scalars.append(p[k][j])
             data_x_points.append(M[k] - C_offset)
 
-        proof.X[j] = rho[j] * dumber25519.G + dumber25519.multiexp(
+        proof.X[j] = rho[j] * dumber25519.G + dumber25519.multiexp_naive(
             data_x_scalars, data_x_points
         )
 
@@ -270,7 +270,7 @@ def grootle_verify(proofs, M, proof_offset, n, m, messages):
     scalars.append(Scalar(-1) * weight2 * proof.z)
     points.append(dumber25519.G)
 
-    if dumber25519.multiexp(scalars, points) != dumber25519.Z:
+    if dumber25519.multiexp_naive(scalars, points) != dumber25519.Z:
         print("Grootle proof failed")
         return False
     else:

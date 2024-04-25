@@ -13,12 +13,6 @@ import time
 import nacl.bindings
 import binascii
 
-# Curve parameters
-q = 2**255 - 19
-l = 2**252 + 27742317777372353535851937790883648493
-cofactor = 8
-b = 256  # bit length
-p = 2**255 - 19
 
 
 # Internal helper methods
@@ -444,7 +438,7 @@ class PointVector:
         if isinstance(s, Scalar):
             return PointVector([self.points[i] * s for i in range(len(self.points))])
         if isinstance(s, ScalarVector):
-            return multiexp(s, self)
+            return multiexp_naive(s, self)
         if isinstance(s, PointVector):
             if not len(self.points) == len(s.points):
                 raise IndexError
@@ -465,7 +459,7 @@ class PointVector:
     # Multiscalar multiplication
     def __pow__(self, s):
         if isinstance(s, ScalarVector) and len(self.points) == len(s.scalars):
-            return multiexp(s, self)
+            return multiexp_naive(s, self)
         return NotImplemented
 
     # Length
@@ -783,6 +777,22 @@ def random_scalar(zero=True):
 def random_point():
     return hash_to_point("{:x}".format(secrets.randbits(b)))
 
+# Perform a naive multiscalar multiplication 
+def multiexp_naive(scalars, points):
+    if not isinstance(scalars, ScalarVector) or not isinstance(points, PointVector):
+        raise TypeError
+
+    if len(scalars) != len(points):
+        raise IndexError
+    if len(scalars) == 0:
+        return Z
+
+    result = Z
+    for i in range(len(scalars)):
+        result += scalars[i]*points[i]
+    
+    return result
+    
 
 # Perform a multiscalar multiplication using a simplified Pippenger algorithm
 def multiexp(scalars, points):
@@ -797,7 +807,7 @@ def multiexp(scalars, points):
     buckets = None
     result = Z  # zero point
 
-    c = 4  # window parameter; NOTE: the optimal value actually depends on len(points) empirically
+    c = 6 # window parameter; NOTE: the optimal value actually depends on len(points) empirically
 
     # really we want to use the max bitlength to compute groups
     maxscalar = int(max(scalars))
@@ -924,6 +934,13 @@ def sc_check(a):
 def sc_reduce_key(a):
     return a % l
 
+
+# Curve parameters
+q = 2**255 - 19
+l = 2**252 + 27742317777372353535851937790883648493
+cofactor = 8
+b = 256  # bit length
+p = 2**255 - 19
 
 # Other constants
 d = -121665 * invert(121666, q)

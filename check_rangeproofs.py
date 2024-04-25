@@ -25,6 +25,7 @@ import copy
 import varint_mic as varint
 import multiprocessing
 import settings
+import time
 
 
 def check_sig_Borromean(resp_json, sig_ind):
@@ -225,9 +226,7 @@ def check_commitments_bp1(resp_json):
 
 
 def check_sig_bp1(resp_json):
-    # P1,P2,bbee,bbs0,bbs1 = get_borromean_vars(resp_json,sig_ind)
     proofs = get_vars_bp1(resp_json)
-    # verified, str_out = check_Borromean(P1,P2,bbee,bbs0,bbs1)
     verified, str_out = check_bp1([proofs])
     if not verified:
         print(
@@ -244,9 +243,7 @@ def check_sig_bp1(resp_json):
 
 
 def check_sig_bp_plus(resp_json):
-    # P1,P2,bbee,bbs0,bbs1 = get_borromean_vars(resp_json,sig_ind)
     proofs = get_vars_bp_plus(resp_json)
-    # verified, str_out = check_Borromean(P1,P2,bbee,bbs0,bbs1)
     verified, str_out = check_bp_plus([proofs])
     if not verified:
         print(
@@ -334,7 +331,7 @@ def check_bp1(proofs):
     G = dumber25519.G
 
     domain = str("bulletproof")
-    H = Scalar(8) * Point(cn_fast_hash(str(G)))
+    H = dumber25519.H
 
     # set up weighted aggregates
     y0 = Scalar(0)
@@ -497,7 +494,7 @@ def check_bp1(proofs):
     str_out += str(t)
 
     str_out += "\n"
-    if not dumber25519.multiexp(scalars, points) == Z:
+    if not dumber25519.multiexp_naive(scalars, points) == Z:
         raise ArithmeticError("Bad z check!")
         str_out += "Bulletproof check FAILED"
         return False, str_out
@@ -509,12 +506,14 @@ def check_bp1(proofs):
 
 def check_bp_plus(proofs):
 
+    tbp = time.time()
+
     # curve points
     Z = dumber25519.Z
     G = dumber25519.G
+    H = dumber25519.H
 
     domain = str("bulletproof_plus")
-    H = Scalar(8) * Point(cn_fast_hash(str(G)))
 
     # Weighted coefficients for common generators
     G_scalar = Scalar(0)
@@ -708,12 +707,15 @@ def check_bp_plus(proofs):
     str_out += str(R)
 
     str_out += "\n"
-    if not dumber25519.multiexp(scalars, points) == Z:
+
+    str_out += "Time until multiexp: " + str(time.time() - tbp)
+    if not dumber25519.multiexp_naive(scalars, points) == Z:
         str_out += "Bulletproof+ check FAILED"
         return False, str_out
 
     str_out += "Bulletproof+ passed!"
     str_out += "The value commited represents the true value with a negligible probability otherwise."
+    str_out += "Total time to execute: " + str(time.time()-tbp)
     return True, str_out
 
 

@@ -52,3 +52,19 @@ def start_scanning(h):
         h += 1
 
     print("Total time", time.time() - initial_time)
+
+def scan_block(h):
+    initial_time = time.time()
+
+    params_block = {"height": h}
+    block_json = com_db.get_block(params_block)
+    txs = block_json["tx_hashes"]
+    nbr_tx = len(txs)
+    print("Block contains " + str(nbr_tx) + " transactions.")
+    # print(nbr_tx)
+
+    for i_tx in range(nbr_tx):
+        # import ipdb;ipdb.set_trace()
+        verify_tx.verify_tx(h, txs, i_tx, 0)
+
+    print("Total time", time.time() - initial_time)

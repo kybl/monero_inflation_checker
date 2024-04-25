@@ -37,8 +37,9 @@ def menu1():
 
 def menu2():
     print("1. Verify a specific transaction")
-    print("2. Scan blockchain")
-    print("3. Quit")
+    print("2. Verify a specific block")
+    print("3. Scan blockchain")
+    print("4. Quit")
 
     val = input("Enter your choice: ")
 
@@ -60,8 +61,11 @@ def menu2():
             )
 
     elif val == "2":
+        block_to_check = input("Enter block to check:")
+        scan_bc.scan_block(block_to_check)
+
+    elif val == "3":
         print("Continue scanning...")
-        # import ipdb;ipdb.set_trace()
         if exists("height.txt"):
             h = int(scan_bc.read_height())
         else:
@@ -69,7 +73,7 @@ def menu2():
             scan_bc.write_height(str(h))
         scan_bc.start_scanning(h)
 
-    elif val == "3":
+    elif val == "4":
         print("Bye")
         return False
 
