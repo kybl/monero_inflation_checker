@@ -500,13 +500,13 @@ def check_bp1(proofs):
         return False, str_out
 
     str_out += "Bulletproof passed!"
-    str_out += "The value commited represents the true value with a negligible probability otherwise."
+    str_out += "The value committed represents the true value with a negligible probability otherwise."
     return True, str_out
 
 
 def check_bp_plus(proofs):
 
-    tbp = time.time()
+    # tbp = time.time()
 
     # curve points
     Z = dumber25519.Z
@@ -708,14 +708,14 @@ def check_bp_plus(proofs):
 
     str_out += "\n"
 
-    str_out += "Time until multiexp: " + str(time.time() - tbp)
+    # str_out += "Time until multiexp: " + str(time.time() - tbp)
     if not dumber25519.multiexp_naive(scalars, points) == Z:
         str_out += "Bulletproof+ check FAILED"
         return False, str_out
 
     str_out += "Bulletproof+ passed!"
-    str_out += "The value commited represents the true value with a negligible probability otherwise."
-    str_out += "Total time to execute: " + str(time.time()-tbp)
+    str_out += "The value committed represents the true value with a negligible probability otherwise."
+    # str_out += "Total time to execute: " + str(time.time()-tbp)
     return True, str_out
 
 

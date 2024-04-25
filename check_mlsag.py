@@ -389,7 +389,6 @@ def get_tx_hash_bp1(resp_json, resp_hex):
 
     outPk = resp_json["rct_signatures"]["outPk"][-1]
 
-    # import ipdb;ipdb.set_trace()
     L, R = "", ""
     bp_A = resp_json["rctsig_prunable"]["bp"][0]["A"]
     bp_S = resp_json["rctsig_prunable"]["bp"][0]["S"]

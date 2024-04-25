@@ -35,31 +35,31 @@ def xfromy(y):
     return x
 
 
-def xfromy_ztm(y):
-    # Not working
+# def xfromy_ztm(y):
+#     # Not working
 
-    biny = bin(y)
-    b = biny[-1]
-    newbin = biny[:-1]
-    newy = newbin + "0"
-    y = int(newy, 2)
-    xp = 0
+#     biny = bin(y)
+#     b = biny[-1]
+#     newbin = biny[:-1]
+#     newy = newbin + "0"
+#     y = int(newy, 2)
+#     xp = 0
 
-    import ipdb
+#     import ipdb
 
-    ipdb.set_trace()
-    u = (y * y - 1) % q
-    v = (d * y * y + 1) % q
-    z = (u * v**3) * exponent(u * v**7, ((q - 5) // 8), q) % q
-    if ((v * z**2) % q) == (u % q):
-        xp = z % q
-    if ((v * z**2) % q) == (-u % q):
-        xp = z * 2 ** ((q - 1) // 4) % q
+#     ipdb.set_trace()
+#     u = (y * y - 1) % q
+#     v = (d * y * y + 1) % q
+#     z = (u * v**3) * exponent(u * v**7, ((q - 5) // 8), q) % q
+#     if ((v * z**2) % q) == (u % q):
+#         xp = z % q
+#     if ((v * z**2) % q) == (-u % q):
+#         xp = z * 2 ** ((q - 1) // 4) % q
 
-    if b != bin(xp)[-1]:
-        return -xp % q
-    else:
-        return xp % q
+#     if b != bin(xp)[-1]:
+#         return -xp % q
+#     else:
+#         return xp % q
 
 
 def bit(h, i):
@@ -739,7 +739,6 @@ def hash_to_point(hexVal):
     ry = (z - w) % q
     rx = rx * rz % q
 
-    # import ipdb;ipdb.set_trace()
     P = point_compress([rx, ry, rz])
     # P8 = P * Scalar(8)
     P8 = P + P + P + P + P + P + P + P

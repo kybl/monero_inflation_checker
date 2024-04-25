@@ -96,7 +96,6 @@ if __name__ == "__main__":
         if sys.argv[1] == "scan_fast":
             settings.node_choice(1)
             print("Continue scanning...")
-            # import ipdb;ipdb.set_trace()
             if exists("height.txt"):
                 h = int(scan_bc.read_height())
             else:

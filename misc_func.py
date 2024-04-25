@@ -100,7 +100,6 @@ def verify_ki(ki):
     str_out += "-------------------Checking Key Image-------------------\n"
     str_out += "--------------------------------------------------------\n"
     res = dumber25519.mul_verify_group(ki, Scalar(1))
-    # import ipdb;ipdb.set_trace()
     if res != "failed":
         str_out += (
             "Point " + str(ki) + " belongs to the G subgroup.\n Everything is fine."

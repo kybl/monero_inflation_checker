@@ -291,14 +291,10 @@ def check_ring_signature(prefix, key_image, pubs, pubs_count, sigr, sigc):
         str_out += str(Ri[ii])
         str_out += "\n"
 
-        # print('Ri calculated for index = ' + str(ii))
-        # print(Ri[ii])
         summ += sigc[ii]
         str_out += "Calculating s: sum = sum + ci " + str(summ)
         str_out += "\n"
 
-    # buf = struct.pack('64s', prefix)
-    # import ipdb;ipdb.set_trace()
     buf = prefix.decode()
     for ii in range(0, pubs_count):
         buf += str(Li[ii])
@@ -312,8 +308,6 @@ def check_ring_signature(prefix, key_image, pubs, pubs_count, sigr, sigc):
     res = summ - h
     str_out += "Subtraction of sum (s) and hash (h): " + str(res)
     str_out += "\n"
-    # print('Result: ')
-    # print(res)
     if res == Scalar(0):
         str_out += "Transaction is valid. The signature matches the data."
     else:

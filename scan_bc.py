@@ -46,7 +46,6 @@ def start_scanning(h):
         # print(nbr_tx)
 
         for i_tx in range(nbr_tx):
-            # import ipdb;ipdb.set_trace()
             verify_tx.verify_tx(h, txs, i_tx, 0)
 
         h += 1
@@ -64,7 +63,6 @@ def scan_block(h):
     # print(nbr_tx)
 
     for i_tx in range(nbr_tx):
-        # import ipdb;ipdb.set_trace()
         verify_tx.verify_tx(h, txs, i_tx, 0)
 
     print("Total time", time.time() - initial_time)
