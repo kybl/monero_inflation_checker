@@ -78,8 +78,7 @@ class Scalar:
                 if x == "l":
                     self.x = l  # technically not in scalar field; used for main subgroup membership
                 else:
-                    x = bytes.fromhex(x)
-                    self.x = sum(2**i * bit(x, i) for i in range(0, b)) % l
+                    self.x = int.from_bytes(bytes.fromhex(x), "little") % l
             except:
                 raise TypeError
         else:
@@ -171,12 +170,8 @@ class Scalar:
 
     # Hex representation
     def __repr__(self):
-        bits = [(self.x >> i) & 1 for i in range(b)]
-        return bytes.hex(
-            bytes(
-                [sum([bits[i * 8 + j] << j for j in range(8)]) for i in range(b // 8)]
-            )
-        )
+        return int.to_bytes(self.x, 32, "little").hex()
+
 
     # Return underlying integer
     def __int__(self):
@@ -209,7 +204,7 @@ class Point:
         elif isinstance(x, str) and y is None:
             try:
                 x = bytes.fromhex(x)
-                self.y = sum(2**i * bit(x, i) for i in range(0, b - 1))
+                self.y = int.from_bytes(x, "little") % pow255
                 self.x = xfromy(self.y)
                 if self.x & 1 != bit(x, b - 1):
                     self.x = q - self.x
@@ -321,12 +316,7 @@ class Point:
 
     # Hex representation
     def __repr__(self):
-        bits = [(self.y >> i) & 1 for i in range(b - 1)] + [self.x & 1]
-        return bytes.hex(
-            bytes(
-                [sum([bits[i * 8 + j] << j for j in range(8)]) for i in range(b // 8)]
-            )
-        )
+        return int.to_bytes((self.y & (pow255 - 1)) + (0 if self.x & 1 == 0 else pow255), 32, "little").hex()
 
     # Curve membership (not main subgroup!)
     def on_curve(self):
@@ -436,7 +426,7 @@ class PointVector:
     # multiplying a PointVector by a scalar or ScalarVector or Hadamard
     def __mul__(self, s):
         if isinstance(s, Scalar):
-            return PointVector([self.points[i] * s for i in range(len(self.points))])
+            return PointVector([point * s for point in self.points])
         if isinstance(s, ScalarVector):
             return multiexp_naive(s, self)
         if isinstance(s, PointVector):
@@ -545,7 +535,7 @@ class ScalarVector:
     def __mul__(self, s):
         # ScalarVector-Scalar: componentwise Scalar-Scalar multiplication
         if isinstance(s, Scalar):
-            return ScalarVector([self.scalars[i] * s for i in range(len(self.scalars))])
+            return ScalarVector([scalar * s for scalar in self.scalars])
         # ScalarVector-ScalarVector: Hadamard product
         if isinstance(s, ScalarVector) and len(self.scalars) == len(s.scalars):
             return ScalarVector(
@@ -562,8 +552,8 @@ class ScalarVector:
     # Sum of all Scalars
     def sum(self):
         r = Scalar(0)
-        for i in range(len(self.scalars)):
-            r += self.scalars[i]
+        for scalar in self.scalars:
+            r += scalar
         return r
 
     # Inner product and multiscalar multiplication
@@ -661,8 +651,8 @@ def sqroot(xx):
     x = expmod(xx, ((q + 3) // 8), q)
     if (x * x - xx) % q != 0:
         x = (x * I) % q
-    if (x * x - xx) % q != 0:
-        print("no square root!")
+        if (x * x - xx) % q != 0:
+            print("no square root!")
     return x
 
 
@@ -679,7 +669,7 @@ def expmod(b, e, m):
 
 
 def modp_inv(x):
-    return pow(x, p - 2, p)
+    return pow(x, q - 2, q)
 
 
 def inv(x):
@@ -689,18 +679,7 @@ def inv(x):
 def hash_to_point(hexVal):
     u = hexToInt(cn_fast_hash(hexVal)) % q
     A = 486662
-    ma = -1 * A % q
-    ma2 = -1 * A * A % q
     sqrtm1 = sqroot(-1)
-    d = theD()  # print(radix255(d))
-    fffb1 = -1 * sqroot(-2 * A * (A + 2))
-    # print("fffb1", ed25519.radix255(fffb1))
-    fffb2 = -1 * sqroot(2 * A * (A + 2))
-    # print("fffb2", ed25519.radix255(fffb2))
-    fffb3 = sqroot(-1 * sqrtm1 * A * (A + 2))
-    # print("fffb3", ed25519.radix255(fffb3))
-    fffb4 = -1 * sqroot(sqrtm1 * A * (A + 2))
-    # print("fffb4", ed25519.radix255(fffb4))
 
     w = (2 * u * u + 1) % q
     xp = (w * w - 2 * A * A * u * u) % q
@@ -882,8 +861,8 @@ def publicFromSecret(sk):
 
 def point_compress(P):
     zinv = modp_inv(P[2])
-    x = P[0] * zinv % p
-    y = P[1] * zinv % p
+    x = P[0] * zinv % q
+    y = P[1] * zinv % q
     # Ptest = dumber25519.make_point(y)
     # if Ptest.x != x:
     # print('Something wrong here!!!! make_point not working')
@@ -935,11 +914,11 @@ def sc_reduce_key(a):
 
 
 # Curve parameters
-q = 2**255 - 19
+pow255 = 2**255
+q = pow255 - 19
 l = 2**252 + 27742317777372353535851937790883648493
 cofactor = 8
 b = 256  # bit length
-p = 2**255 - 19
 
 # Other constants
 d = -121665 * invert(121666, q)
