@@ -39,7 +39,7 @@ def node_choice(choice):
     node_conn = copy.copy(choice)
 
     if node_conn == 0:
-        url_str = "http://node.sethforprivacy.com:18089/"
+        url_str = "http://xmr-node.cakewallet.com:18081/"
     else:
         url_str = "http://localhost:18081/"
 
