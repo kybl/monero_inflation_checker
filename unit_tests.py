@@ -59,6 +59,72 @@ class Test_hash_to_point(unittest.TestCase):
         print("Time to verify hash_to_point: " + str((t2-t1)*1000) + " ms")
         self.assertEqual(P,P_test)
 
+class Test_check_bulletproofs(unittest.TestCase):
+    def setUp(self):
+        # Setting up a valid BP proof
+        V = PointVector([])
+        V.append(Point('a6e50d0e5f011e1146d2a5fd21d728b0be0476c9b8a7d307d1c063456e406b1f'))
+        A = Point('c7c45c3cabdfc463ecd8e8186f54f668ba755b7a2f77bd1013b78879f0d50a83')
+        S = Point('51865ebfc9d920a8f78ca46f7aa171db141341b6f6dbfeb4eb0697b035d7c1b1')
+        T1 = Point('d0bc31b93eb0674e7bd62d6847b4c97ff2f4edd65769fb37ee99088746eff27a')
+        T2 = Point('341cbffd64ded50cbbd674417d0fbc7ee4a732d778b82a693730e2c7201edfd5')
+        taux = Scalar('6886616307c71e365fd10b245b86e886445caac74cc69336e7ae934b2c7ff000')
+        mu = Scalar('c670b963ea8e05cf376cda185642d545ea32a15d44131b4c3c451dadc1030a07')
+        a = Scalar('0c3d624242fc1c499daa6afbc50bc5085e9288e46d2fa2c1f0d2e4967fa1bb0b')
+        b = Scalar('50b8f44b8d7d6a2c0a5c89b523b119065f45c5e89083786e07163de2dbcff401')
+        t = Scalar('aab0a46efb7c681f3ed5071ff91e05a5d1bc9b1ed9a809b65b8f49e867ef2008')
+        L = PointVector([])
+        L.append(Point('6142b868653b63dd12b40f3ca33fa96742f3756596a98284bdc10ec27a78e078'))
+        L.append(Point('7ce30741a79a6827382b5a8ec18e2ac896ed8e65dd9a9a80b586c64ce6cc38ea'))
+        L.append(Point('5e229737cc8c75ccf4de0571a88bf4f97406c845a596bd5dc1797c8a6f18a458'))
+        L.append(Point('c069a6d30fb83aa38188566f99a35f77f53f2b8a3eaed94c73fccb40c7c262d6'))
+        L.append(Point('1d2244dfb11c84fb26b8ecbbc510e64845b53046c4a09899dd56c15b10426d70'))
+        L.append(Point('e98069b5f33e6a4118f5790c4c42de9127ce0890b4960a6d0c3b705cd835dd90'))
+        R = PointVector([])
+        R.append(Point('ceb47ec93c9125a6cd8a98dc8f138eee837e46d6af4007e67a4d852f3c4a8d19'))
+        R.append(Point('8eac6798364e39d80cce44d9b00633e5958d7a2e8190366d19f2d9e7d5ae8167'))
+        R.append(Point('9eee301a904d957c3892d58effeda8476bbbc2fa402feddd000caa3a2c945c32'))
+        R.append(Point('1be6f05381640662cd374c4e993ad46b43603412e02b89ed9c4541d8e3e21dd5'))
+        R.append(Point('c5575fe23a5f3b660d1c1e37f16d91ed5c2f79941373c8b0efbd05d52f28e192'))
+        R.append(Point('59e3a9a23a3fdb8f6703b8317d119c5e90b992dde5fb970cc34b4c9e3b219725'))
+    
+        self.bpp = [V,A,S,T1,T2,taux,mu,L,R,a,b,t]
+
+    def test_verify_bp_defined(self):
+        t1 = time.time()
+        r = check_rangeproofs.check_bp([self.bpp])
+        t2 = time.time()
+        print("Time to verify Bulletproofs: " + str((t2-t1)*1000) + " ms")
+        self.assertTrue(r)
+
+    def test_verify_bp_1_proof(self):
+        sv = ScalarVector([])
+        sv.append(Scalar(42))
+        gammas = ScalarVector([])
+        gammas.append(random_scalar())
+
+        t1 = time.time()
+        bp_generated = check_rangeproofs.prove_bp(sv,gammas)
+        res = check_rangeproofs.check_bp([bp_generated])
+        t2 = time.time()
+        print("Time to generate and verify Bulletproofs: " + str((t2-t1)*1000) + " ms")
+        self.assertTrue(res)
+
+    def test_verify_bp_N_proofs(self):
+        sv = ScalarVector([])
+        gammas = ScalarVector([])
+
+        for i in range(8):
+            sv.append(Scalar(random.randrange(2**64)))
+            gammas.append(random_scalar())
+
+        t1 = time.time()
+        bp_generated = check_rangeproofs.prove_bp(sv,gammas)
+        res = check_rangeproofs.check_bp([bp_generated])
+        t2 = time.time()
+        print("Time to generate and verify 8 Bulletproofs: " + str((t2-t1)*1000) + " ms")
+        self.assertTrue(res)
+
 class Test_check_bulletproofs_plus(unittest.TestCase):
     def setUp(self):
         # Setting up a valid BP+ proof
@@ -86,13 +152,40 @@ class Test_check_bulletproofs_plus(unittest.TestCase):
         R.append(Point('3ddd3c95247b4f48f532a788c616c2570ac3cf9ffcd04e5373112c36c27fcacf'))
         self.bpp = [V, A, A1, B, r1, s1, d1, L, R]
 
-
-    def test_verify_bp_plus(self):
+    def test_verify_bp_plus_defined(self):
         t1 = time.time()
         r = check_rangeproofs.check_bp_plus([self.bpp])
         t2 = time.time()
         print("Time to verify Bulletproofs_plus: " + str((t2-t1)*1000) + " ms")
         self.assertTrue(r)
+
+    def test_verify_bp_plus_1_proof(self):
+        sv = ScalarVector([])
+        sv.append(Scalar(42))
+        gammas = ScalarVector([])
+        gammas.append(random_scalar())
+
+        t1 = time.time()
+        bpp_generated = check_rangeproofs.prove_bp_plus(sv,gammas)
+        res = check_rangeproofs.check_bp_plus([bpp_generated])
+        t2 = time.time()
+        print("Time to generate and verify Bulletproofs_plus: " + str((t2-t1)*1000) + " ms")
+        self.assertTrue(res)
+
+    def test_verify_bp_plus_N_proofs(self):
+        sv = ScalarVector([])
+        gammas = ScalarVector([])
+
+        for i in range(8):
+            sv.append(Scalar(random.randrange(2**64)))
+            gammas.append(random_scalar())
+
+        t1 = time.time()
+        bpp_generated = check_rangeproofs.prove_bp_plus(sv,gammas)
+        res = check_rangeproofs.check_bp_plus([bpp_generated])
+        t2 = time.time()
+        print("Time to generate and verify 8 Bulletproofs_plus: " + str((t2-t1)*1000) + " ms")
+        self.assertTrue(res)
 
 class Test_check_CLSAG(unittest.TestCase):
 

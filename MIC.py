@@ -105,7 +105,7 @@ if __name__ == "__main__":
         scan_bc.start_scanning(filename, h)
 
     elif sys.argv[1] == "scan_blocks":
-        settings_df25519.node_choice(1)
+        settings_df25519.node_choice(0)
         filename = "last_block_scanned.txt"
         if exists(filename):
             h = int(scan_bc.read_height(filename))

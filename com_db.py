@@ -67,7 +67,10 @@ def get_tx(txs, index):
     # execute the rpc request
     response = requests.post(url, data=json.dumps(rpc_input), headers=headers)
 
-    resp_json = json.loads(response.json()["txs"][index]["as_json"])
-    resp_hex = response.json()["txs"][index]["as_hex"]
+    try:
+        resp_json = json.loads(response.json()["txs"][index]["as_json"])
+        resp_hex = response.json()["txs"][index]["as_hex"]
+    except:
+        import ipdb; ipdb.set_trace()
 
     return resp_json, resp_hex

@@ -48,7 +48,6 @@ def ring_sig_correct_bp1(h, resp_json, resp_hex, txs, i_tx, inputs, outputs, det
                         pubs,
                         masks,
                         message,
-                        details,
                     )
                 )
 
@@ -95,8 +94,7 @@ def ring_sig_correct_bp1(h, resp_json, resp_hex, txs, i_tx, inputs, outputs, det
         )
 
     return str_ki, str_inp, str_out, str_commits
-
-
+#--------------------------------------------------------------------------------------------
 def ring_sig_correct_bp_plus(
     h, resp_json, resp_hex, txs, i_tx, inputs, outputs, details
 ):
@@ -170,8 +168,7 @@ def ring_sig_correct_bp_plus(
         )
 
     return str_ki, str_inp, str_out, str_commits
-
-
+#--------------------------------------------------------------------------------------------
 def check_sig_clsag_bp1(
     resp_json, sig_ind, inputs, rows, pubs, masks, message 
 ):
@@ -202,8 +199,7 @@ def check_sig_clsag_bp1(
         raise Exception("ring_signature_failure")
 
     return ""
-
-
+#--------------------------------------------------------------------------------------------
 def generate_CLSAG(msg, p, P, z, C_offset, C, C_nonzero, Seed=None):
     inv8 = Scalar(8).invert()
     n = len(P)  # ring size
@@ -289,6 +285,7 @@ def generate_CLSAG(msg, p, P, z, C_offset, C, C_nonzero, Seed=None):
     s[l] = alpha - c * (p * mu_P + mu_C * z)
 
     return s, c1, D
+#--------------------------------------------------------------------------------------------
 class CLSAG:
     def __init__(self, msg, s, c1, D_aux, I, P, C_nonzero, C_offset):
         self.msg = msg
@@ -299,12 +296,12 @@ class CLSAG:
         self.P = P
         self.C_nonzero = C_nonzero 
         self.C_offset = C_offset
-
+#--------------------------------------------------------------------------------------------
 def check_CLSAGs(clsags):
     for c in clsags:
         check_CLSAG(c.msg, c.s, c.c1, c.D_aux, c.I, c.P, c.C_nonzero, c.C_offset)
     return True
-
+#--------------------------------------------------------------------------------------------
 def check_CLSAG(msg, s, c1, D_aux, I, P, C_nonzero, C_offset):
 
     domain0 = "CLSAG_agg_0"
@@ -350,9 +347,6 @@ def check_CLSAG(msg, s, c1, D_aux, I, P, C_nonzero, C_offset):
         cp = c * mu_P
         cc = c * mu_C
 
-        # import ipdb;ipdb.set_trace()
-        # L = s[i] * df25519.G + cp*P[i] + cc*(C_nonzero[i] - C_offset)
-        # R = s[i] * hash_to_point(str(P[i])) + cp * I + cc * D8
         L = df25519.G.scalar_mult_base(s[i]) + cp * P[i] + cc*(C_nonzero[i] - C_offset)
         R = s[i] * hash_to_point(str(P[i])) + cp * I + Scalar(8) * cc * D 
 
@@ -368,8 +362,7 @@ def check_CLSAG(msg, s, c1, D_aux, I, P, C_nonzero, C_offset):
         return True
 
     return False
-
-
+#--------------------------------------------------------------------------------------------
 def get_tx_hash_clsag(resp_json, resp_hex):
     extra_hex = ""
     for i in range(len(resp_json["extra"])):
@@ -401,8 +394,7 @@ def get_tx_hash_clsag(resp_json, resp_hex):
     ph3_hash = df25519.cn_fast_hash(ph3)
 
     return df25519.cn_fast_hash(ph1_hash + ph2_hash + ph3_hash)
-
-
+#--------------------------------------------------------------------------------------------
 def get_tx_hash_clsag_bp_plus(resp_json, resp_hex):
     extra_hex = ""
     for i in range(len(resp_json["extra"])):

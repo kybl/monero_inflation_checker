@@ -1,4 +1,3 @@
-
 import nacl.bindings
 import nacl.utils
 import binascii
@@ -532,7 +531,7 @@ def multiexp(scalars, points):
     return result
 
 def random_scalar():
-    return Scalar(nacl.utils.random())
+    return Scalar(nacl.bindings.crypto_core_ed25519_scalar_reduce(nacl.utils.random(64)))
 
 def random_point():
     return hash_to_point("{:x}".format(secrets.randbits(b)))

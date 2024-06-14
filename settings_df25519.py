@@ -20,7 +20,6 @@ import df25519
 import varint_mic as varint
 import numpy as np
 
-
 global url_str
 global Hi_df, Gi_df, Hi_plus_df, Gi_plus_df
 

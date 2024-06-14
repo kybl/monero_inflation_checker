@@ -14,7 +14,6 @@ import multiprocessing
 import check_rangeproofs
 from concurrent.futures import as_completed, ProcessPoolExecutor
 
-
 def ring_sig_correct(h, resp_json, resp_hex, txs, i_tx, inputs, outputs, details):
     rows = len(resp_json["vin"][0]["key"]["key_offsets"])
     message = get_tx_hash_mlsag(resp_json, resp_hex)
