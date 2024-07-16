@@ -11,6 +11,7 @@ import verify_tx
 import scan_bc
 import settings_df25519
 import sys
+import logging
 
 def menu1():
     print("---------------------------------------")
@@ -35,35 +36,29 @@ def menu1():
 
 
 def menu2():
+    print("0. Quit")
     print("1. Verify a specific transaction")
     print("2. Verify a specific block")
     print("3. Scan blockchain")
-    print("4. Quit")
 
     val = input("Enter your choice: ")
 
-    if val == "1":
+    if val == "0":
+        print("Bye")
+        return False
+
+    elif val == "1":
         tx_to_check = input("Enter transaction id:")
-        try:
-            str_ki, str_inp, str_out, str_commit = verify_tx.verify_tx(
-                0, [str(tx_to_check)], i_tx=0, details=1
-            )
-            print("".join(str_ki))
-            print("".join(str_inp))
-            print("".join(str_out))
-            print("".join(str_commit))
-        except KeyError:
-            print("Not found. Please enter a valid transaction.")
-        except Exception:
-            print(
-                "Please check if your node is properly running. If so, maybe there is a bug in the software. Please report the txid at monero-inflation-checker@protonmail.com. Thank you!"
-            )
+        if not verify_tx.verify_tx([str(tx_to_check)], i_tx=0):
+            print("Failed. Transaction might not be valid.")
+        else:
+            print("Transaction is valid.")
 
     elif val == "2":
         block_to_check = input("Enter block to check:")
         filename = "last_block_scanned.txt"
         scan_bc.write_height(filename, str(block_to_check))
-        scan_bc.start_scanning(filename, int(block_to_check))
+        scan_bc.start_scanning(filename, int(block_to_check), False)
 
     elif val == "3":
         print("Continue scanning...")
@@ -73,11 +68,12 @@ def menu2():
         else:
             h = 0
             scan_bc.write_height(filename, str(h))
-        scan_bc.start_scanning(filename, h)
+        scan_bc.start_scanning(filename, h, True)
 
-    elif val == "4":
-        print("Bye")
-        return False
+    elif val == "17":
+        print("Benchmarking...")
+        scan_bc.txs_to_benchmark()
+
 
     else:
         print("Option unavailable")
@@ -86,6 +82,8 @@ def menu2():
 
 
 if __name__ == "__main__":
+    settings_df25519.logger_basic.info('Starting program.')
+
     n = len(sys.argv)
 
     if n == 1:

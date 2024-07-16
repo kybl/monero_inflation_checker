@@ -22,8 +22,7 @@ def get_tx_prefix_hash(resp_json, resp_hex):
     tx_prefix_raw = resp_hex.split(sig)[0]
     tx_prefix_hash = df25519.cn_fast_hash(tx_prefix_raw)
     return tx_prefix_hash.encode()
-
-
+#--------------------------------------------------------------------------------------------
 def get_signatures(resp_json, resp_hex, index):
     signatures = resp_json["signatures"]
     sig = signatures[index]
@@ -39,37 +38,19 @@ def get_signatures(resp_json, resp_hex, index):
     sigr = df25519.ScalarVector(sr)
 
     return n_ring_members, sigr, sigc
-
-
+#--------------------------------------------------------------------------------------------
 def get_key_image(resp_json, index):
     image = resp_json["vin"][index]["key"]["k_image"]
     return image
-
-
-def check_v1(resp_json, resp_hex, sig_ind, pubs, tx_prefix, details):
+#--------------------------------------------------------------------------------------------
+def check_v1(resp_json, resp_hex, sig_ind, pubs, tx_prefix):
     pubs_count, sigr, sigc = get_signatures(resp_json, resp_hex, sig_ind)
     key_image = get_key_image(resp_json, sig_ind)
 
-    verified, str_inp = check_ring_signature(
+    return check_ring_signature(
         tx_prefix, key_image, df25519.PointVector(pubs[sig_ind]), pubs_count, sigr, sigc
     )
-    # print(str_out)
-    if verified == False:
-        print("Signatures dont match! Verify this block")
-        print(
-            "Potential inflation in MLSAG ring signature! Please verify what is happening!"
-        )
-        with open("error.txt", "a+") as file1:
-            # Writing data to a file
-            file1.write(
-                "\nPotential inflation in V1 ring signature! Please verify what is happening!"
-            )
-            file1.write(str(resp_json))
-        raise Exception("ring_signature_failure")
-
-    return str_inp
-
-
+#--------------------------------------------------------------------------------------------
 def ring_sig_correct(h, resp_json, resp_hex, txs, i_tx, inputs, outputs, details):
     tx_prefix = get_tx_prefix_hash(resp_json, resp_hex)
 
@@ -106,14 +87,8 @@ def ring_sig_correct(h, resp_json, resp_hex, txs, i_tx, inputs, outputs, details
         str_inp.append(res.result())
 
     return str_ki, str_inp, "", str_commits
-
-
+#--------------------------------------------------------------------------------------------
 def check_balance(inputs, outputs, resp_json):
-    str_out = "\n"
-    str_out += "--------------------------------------------------------\n"
-    str_out += "-----------Checking Input and Output Amounts------------\n"
-    str_out += "--------------------------------------------------------"
-    str_out += "\n"
     Cin = 0.0
     Cout = 0.0
 
@@ -125,59 +100,11 @@ def check_balance(inputs, outputs, resp_json):
 
     Fees = Cin - Cout
 
-    str_out += "Cin = "
-    str_out += str(Cin / 1e12)
-    str_out += "\n"
-    str_out += "Cout = "
-    str_out += str(Cout / 1e12)
-    str_out += "\n"
-    str_out += "Fees = "
-    str_out += str(Fees / 1e12)
-    str_out += "\n"
-    if Cin > Cout:
-        str_out += "Everything is fine. Cin > Cout"
-    else:
-        str_out += "Inflation is clearly happening here!"
-
-    str_out += "\n"
-    str_out += "--------------------------------------------------------"
-    str_out += "\n"
-
-    return str_out
-
-
-def ring_sig_correct_original(txs, index, details):
-    resp_json, resp_hex = com_db.get_tx(txs, index)
-    tx_prefix = get_tx_prefix_hash(resp_json, resp_hex)
-    for ki in range(len(resp_json["vin"])):
-        pubs_count, sigr, sigc = get_signatures(resp_json, resp_hex, ki)
-        key_image = get_key_image(resp_json, ki)
-
-        pubs, _ = misc_func.get_members_and_masks_in_rings(resp_json)
-        verified, str_out = check_ring_signature(
-            tx_prefix, key_image, df25519.PointVector(pubs), pubs_count, sigr, sigc
-        )
-        # print(str_out)
-        if verified == False:
-            print("Signatures dont match! Verify this block")
-            print(
-                "Potential inflation in MLSAG ring signature! Please verify what is happening!"
-            )
-            with open("error.txt", "a+") as file1:
-                # Writing data to a file
-                file1.write(
-                    "\nPotential inflation in V1 ring signature! Please verify what is happening!"
-                )
-                file1.write(str(resp_json))
-            raise Exception("ring_signature_failure")
-        else:
-            if details == 1:
-                print(str_out)
-        # print(verified)
-
-    return verified
-
-
+    if Cin >= Cout:
+        return True
+    
+    return False
+#--------------------------------------------------------------------------------------------
 def generate_ring_signature(prefix, image, pubs, pubs_count, sec, sec_index):
     summ = Scalar(0)
     aba = [Scalar(0) for xx in range(pubs_count)]
@@ -247,77 +174,31 @@ def generate_ring_signature(prefix, image, pubs, pubs_count, sec, sec_index):
     print("sigr: ")
     print(sigr)
     return image, sigc, sigr
-
-
+#--------------------------------------------------------------------------------------------
 def check_ring_signature(prefix, key_image, pubs, pubs_count, sigr, sigc):
     Li = [Scalar(0) for xx in range(pubs_count)]
     Ri = [Scalar(0) for xx in range(pubs_count)]
-    str_out = "\n"
-    str_out += "--------------------------------------------------------"
-    str_out += "\n"
-    str_out += "Arguments of check_ring_signature: "
-    str_out += "Prefix: " + str(prefix)
-    str_out += "\n"
-    str_out += "Key_image: " + str(key_image)
-    str_out += "\n"
-    str_out += "Public keys: " + str(pubs)
-    str_out += "\n"
-    str_out += "Public keys count: " + str(pubs_count)
-    str_out += "\n"
-    str_out += "Signature r: " + str(sigr)
-    str_out += "\n"
-    str_out += "Signature c: " + str(sigc)
-    str_out += "\n"
 
     summ = Scalar(0)
     for ii in range(0, pubs_count):
-        str_out += "Calculating Li = ri * G + ci * P   for index = " + str(ii)
-        str_out += "\n"
         Li[ii] = sigr[ii] * df25519.G + sigc[ii] * pubs[ii]
-        str_out += "Li calculated for index = " + str(ii)
-        str_out += "\n"
-        str_out += str(Li[ii])
-        str_out += "\n"
-        # print('Li calculated for index = ' + str(ii))
-        # print(Li[ii])
         tmp1 = df25519.hash_to_point(str(pubs[ii]))
-        str_out += "Calculating Ri = ri * H(P) + ci * I   for index = " + str(ii)
-        str_out += "\n"
         Ri[ii] = sigr[ii] * df25519.hash_to_point(str(pubs[ii])) + sigc[ii] * Point(
             key_image
         )
-        str_out += "Ri calculated for index = " + str(ii)
-        str_out += "\n"
-        str_out += str(Ri[ii])
-        str_out += "\n"
 
         summ += sigc[ii]
-        str_out += "Calculating s: sum = sum + ci " + str(summ)
-        str_out += "\n"
 
     buf = prefix.decode()
     for ii in range(0, pubs_count):
         buf += str(Li[ii])
         buf += str(Ri[ii])
 
-    str_out += "Message (prefix+Li+Ri) before hash_to_scalar = " + str(buf)
-    str_out += "\n"
     h = df25519.hash_to_scalar(buf)
-    str_out += "Hash of prefix (h): " + str(h)
-    str_out += "\n"
     res = summ - h
-    str_out += "Subtraction of sum (s) and hash (h): " + str(res)
-    str_out += "\n"
-    if res == Scalar(0):
-        str_out += "Transaction is valid. The signature matches the data."
-    else:
-        str_out += "Transaction is invalid. The signature does not match the data."
 
-    str_out += "\n"
-    str_out += "--------------------------------------------------------"
-    str_out += "\n"
-
-    return (res == Scalar(0)), str_out
+    return res == Scalar(0) 
+#--------------------------------------------------------------------------------------------
 
 
 if __name__ == "__main__":

@@ -120,19 +120,7 @@ def check_commitments_bp1(resp_json):
 #--------------------------------------------------------------------------------------------
 def check_sig_Borromean(resp_json, sig_ind):
     P1, P2, bbee, bbs0, bbs1 = get_borromean_vars(resp_json, sig_ind)
-    verified, str_out = check_Borromean(P1, P2, bbee, bbs0, bbs1)
-    if not verified:
-        print(
-            "Potential inflation in Borromean Signatures! Please verify what is happening!"
-        )
-        with open("error.txt", "a+") as file1:
-            # Writing data to a file
-            file1.write(str(resp_json))
-            file1.write(
-                "\nPotential inflation in Borromean ring signature! Please verify what is happening!"
-            )
-        raise Exception("borromean_signature_failure")
-    return str_out
+    return check_Borromean(P1, P2, bbee, bbs0, bbs1)
 #--------------------------------------------------------------------------------------------
 def get_borromean_vars(resp_json, ind):
     Ci = resp_json["rctsig_prunable"]["rangeSigs"][ind]["Ci"]
@@ -154,40 +142,14 @@ def get_borromean_vars(resp_json, ind):
 #--------------------------------------------------------------------------------------------
 def check_Borromean(P1, P2, bbee, bbs0, bbs1, details=0):
     LV = ""
-    str_out = "\n"
-    str_out += "--------------------------------------------------------\n"
-    str_out += "-----------Checking Borromean Ring Signature------------\n"
-    str_out += "--------------------------------------------------------"
-    str_out += "\n"
     for j in range(64):
         LL = bbee * P1[j] + bbs0[j] * df25519.G
         chash = df25519.hash_to_scalar(str(LL))
         LV += str(chash * P2[j] + bbs1[j] * df25519.G)
-        str_out += str("LL = ")
-        str_out += str(LL)
-        str_out += "\n"
 
     eeComp = df25519.hash_to_scalar(LV)
-    str_out += str("eeComp = ")
-    str_out += str(eeComp)
-    str_out += "\n"
     res = bbee - eeComp
-    str_out += "\n"
-    str_out += str("Result: ")
-    str_out += "\n"
-    str_out += str(res)
-    str_out += "\n"
-    if res == Scalar(0):
-        str_out += "Borromean verification done. Everything is fine."
-    else:
-        str_out += (
-            "Borromean verification failed! There may be some inflation happening!"
-        )
-    str_out += "\n"
-    str_out += "--------------------------------------------------------"
-    str_out += "\n"
-
-    return res == Scalar(0), str_out
+    return res == Scalar(0) 
 #--------------------------------------------------------------------------------------------
 def generate_Borromean(ai, Ci, CiH, b):
     alpha = []
@@ -223,19 +185,7 @@ def generate_Borromean(ai, Ci, CiH, b):
 #--------------------------------------------------------------------------------------------
 def check_sig_bp1(resp_json):
     proofs = get_vars_bp1(resp_json)
-    verified = check_bp([proofs])
-    if not verified:
-        print(
-            "Potential inflation in Bulletproofs Signatures! Please verify what is happening!"
-        )
-        with open("error.txt", "a+") as file1:
-            # Writing data to a file
-            file1.write(str(resp_json))
-            file1.write(
-                "\nPotential inflation in Bulletproofs ! Please verify what is happening!"
-            )
-        raise Exception("bulletproof_failed")
-    return "" 
+    return check_bp([proofs])
 #--------------------------------------------------------------------------------------------
 def get_vars_bp1(resp_json):
     ind = 0
@@ -272,19 +222,7 @@ def get_vars_bp1(resp_json):
 #--------------------------------------------------------------------------------------------
 def check_sig_bp_plus(resp_json):
     proofs = get_vars_bp_plus(resp_json)
-    verified = check_bp_plus([proofs])
-    if not verified:
-        print(
-            "Potential inflation in Bulletproofs+ Signatures! Please verify what is happening!"
-        )
-        with open("error.txt", "a+") as file1:
-            # Writing data to a file
-            file1.write(str(resp_json))
-            file1.write(
-                "\nPotential inflation in Bulletproofs+ ! Please verify what is happening!"
-            )
-        raise Exception("bulletproofplus_failed")
-    return ""
+    return check_bp_plus([proofs])
 #--------------------------------------------------------------------------------------------
 def get_vars_bp_plus(resp_json):
     ind = 0

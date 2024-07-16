@@ -71,6 +71,7 @@ def get_tx(txs, index):
         resp_json = json.loads(response.json()["txs"][index]["as_json"])
         resp_hex = response.json()["txs"][index]["as_hex"]
     except:
-        import ipdb; ipdb.set_trace()
+        print("Error: Could not fetch transaction from daemon")
+        raise
 
     return resp_json, resp_hex

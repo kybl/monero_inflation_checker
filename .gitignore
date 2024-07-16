@@ -1,2 +1,5 @@
 __pycache__
 .history/**
+block_stats.csv
+last_block_scanned.txt
+

@@ -22,7 +22,7 @@ import multiprocessing
 import check_rangeproofs
 from concurrent.futures import as_completed, ProcessPoolExecutor
 import time
-
+import settings_df25519
 
 def ring_sig_correct_bp1(h, resp_json, resp_hex, txs, i_tx, inputs, outputs, details):
     rows = len(resp_json["vin"][0]["key"]["key_offsets"])
@@ -102,70 +102,54 @@ def ring_sig_correct_bp_plus(
     message = get_tx_hash_clsag_bp_plus(resp_json, resp_hex)
     pubs, masks = misc_func.get_members_and_masks_in_rings(resp_json)
 
-    str_ki = []
+    str_ki, str_inp, str_out, str_commits = "Passed!","Passed!","Passed!","Passed!"
+
     for sig_ind in range(inputs):
         Iv = Point(resp_json["vin"][sig_ind]["key"]["k_image"])
-        str_ki.append(misc_func.verify_ki(Iv))
+        if not (misc_func.verify_ki(Iv)):
+            str_ki = "Verification of key_image: " + str(Iv) + " failed."
+            settings_df25519.logger_inflation.info(str_res)
 
-    y = []
+    # Check ring-signatures 
     for sig_ind in range(inputs):
-        try:
-            with ProcessPoolExecutor() as exe:
-                y.append(
-                    exe.submit(
-                        check_sig_clsag_bp1,
-                        resp_json,
-                        sig_ind,
-                        inputs,
-                        rows,
-                        pubs,
-                        masks,
-                        message,
-                    )
-                )
+        if not (check_sig_clsag_bp1(
+                    resp_json,
+                    sig_ind,
+                    inputs,
+                    rows,
+                    pubs,
+                    masks,
+                    message
+                )):
 
-        except:
-            print(
-                "Verify block_height: "
-                + str(h)
-                + " tx : "
-                + str(txs[i_tx])
-                + " ring signature failed"
-            )
+            str_inp = ("Verify block_height: "
+            + str(h)
+            + " tx : "
+            + str(txs[i_tx])
+            + " ring signature failed")
+            settings_df25519.logger_inflation.info(str_inp)
+            # raise Exception("ring_signature_failure")
 
-    str_inp = []
-    for res in as_completed(y):
-        str_inp.append(res.result())
+    # Check rangeproofs
+    if not check_rangeproofs.check_sig_bp_plus(resp_json):
+        str_out = (
+            "Verify block_height: "
+            + str(h)
+            + " tx : "
+            + str(txs[i_tx])
+            + " Bulletproofs failed"
+        )
+        settings_df25519.logger_inflation.info(str_out)
 
-    # str_out = check_rangeproofs.check_sig_bp_plus(resp_json)
-    x = []
-    for sig_ind in range(1):
-        try:
-            with ProcessPoolExecutor() as exe:
-                x.append(exe.submit(check_rangeproofs.check_sig_bp_plus, resp_json))
-        except:
-            print(
-                "Verify block_height: "
-                + str(h)
-                + " tx : "
-                + str(txs[i_tx])
-                + " Bulletproofs failed"
-            )
-
-    str_out = []
-    for res in as_completed(x):
-        str_out.append(res.result())
-
-    try:
-        str_commits = check_rangeproofs.check_commitments_bp1(resp_json)
-    except:
-        print(
+    if not check_rangeproofs.check_commitments_bp1(resp_json):
+        str_commits = (
             "Verify block_height: "
             + str(h)
             + " tx : "
             + str(txs[i_tx])
             + " commitments check failed"
         )
+        settings_df25519.logger_inflation.info(str_commits)
 
     return str_ki, str_inp, str_out, str_commits
 #--------------------------------------------------------------------------------------------
@@ -182,23 +166,10 @@ def check_sig_clsag_bp1(
     D = Point(resp_json["rctsig_prunable"]["CLSAGs"][sig_ind]["D"])
     I = Point(resp_json["vin"][sig_ind]["key"]["k_image"])
 
-    verified = check_CLSAG(
+    return check_CLSAG(
         message, s_scalar, c1, D, I, pubs_current, masks_current, C_offset 
     )
-    if verified == False:
-        print("Signatures dont match! Verify this block")
-        print(
-            "Potential inflation in CLSAG ring signature! Please verify what is happening!"
-        )
-        with open("error.txt", "a+") as file1:
-            # Writing data to a file
-            file1.write(str(resp_json))
-            file1.write(
-                "\nPotential inflation in CLSAG ring signature! Please verify what is happening!"
-            )
-        raise Exception("ring_signature_failure")
 
-    return ""
 #--------------------------------------------------------------------------------------------
 def generate_CLSAG(msg, p, P, z, C_offset, C, C_nonzero, Seed=None):
     inv8 = Scalar(8).invert()

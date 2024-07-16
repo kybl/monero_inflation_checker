@@ -20,6 +20,9 @@ import df25519
 import varint_mic as varint
 import numpy as np
 
+#--------------------------------------------------------------------------------------------
+### Load generators and node string (url_str) 
+#--------------------------------------------------------------------------------------------
 global url_str
 global Hi_df, Gi_df, Hi_plus_df, Gi_plus_df
 
@@ -42,8 +45,34 @@ def node_choice(choice):
     else:
         url_str = "http://localhost:18081/"
 
-# import ipdb;ipdb.set_trace()
+#--------------------------------------------------------------------------------------------
+### Load loggers 
+#--------------------------------------------------------------------------------------------
+import logging
+formatter = logging.Formatter('%(asctime)s %(levelname)s %(message)s')
 
+def setup_logger(name, log_file, level=logging.INFO):
+
+    handler = logging.FileHandler(log_file)        
+    handler.setFormatter(formatter)
+
+    logger = logging.getLogger(name)
+    logger.setLevel(level)
+    logger.addHandler(handler)
+
+    return logger
+
+global logger_basic, logger_inflation
+
+# Basic logger
+logger_basic = setup_logger('logger_basic', 'logger_basic.log')
+
+# Inflation logger (This file should be empty or inexistent)
+logger_inflation = setup_logger('logger_inflation', 'logger_inflation.log', logging.CRITICAL)
+
+#--------------------------------------------------------------------------------------------
+### Code used to create generators 
+#--------------------------------------------------------------------------------------------
 # M,N = 16,64
 
 # domain = str("bulletproof")

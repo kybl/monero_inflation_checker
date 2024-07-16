@@ -14,7 +14,7 @@ import multiprocessing
 import check_rangeproofs
 from concurrent.futures import as_completed, ProcessPoolExecutor
 
-def ring_sig_correct(h, resp_json, resp_hex, txs, i_tx, inputs, outputs, details):
+def ring_sig_correct(h, resp_json, resp_hex, txs, i_tx, inputs, outputs):
     rows = len(resp_json["vin"][0]["key"]["key_offsets"])
     message = get_tx_hash_mlsag(resp_json, resp_hex)
     pubs, masks = misc_func.get_members_and_masks_in_rings(resp_json)
@@ -37,7 +37,6 @@ def ring_sig_correct(h, resp_json, resp_hex, txs, i_tx, inputs, outputs, details
                         pubs,
                         masks,
                         message,
-                        details,
                     )
                 )
 
@@ -90,7 +89,7 @@ def ring_sig_correct(h, resp_json, resp_hex, txs, i_tx, inputs, outputs, details
     return str_ki, str_inp, str_out, str_commits
 
 
-def ring_sig_correct_bp1(h, resp_json, resp_hex, txs, i_tx, inputs, outputs, details):
+def ring_sig_correct_bp1(h, resp_json, resp_hex, txs, i_tx, inputs, outputs):
     rows = len(resp_json["vin"][0]["key"]["key_offsets"])
     message = get_tx_hash_bp1(resp_json, resp_hex)
     pubs, masks = misc_func.get_members_and_masks_in_rings(resp_json)
@@ -112,8 +111,7 @@ def ring_sig_correct_bp1(h, resp_json, resp_hex, txs, i_tx, inputs, outputs, det
                         rows,
                         pubs,
                         masks,
-                        message,
-                        details,
+                        message
                     )
                 )
 
@@ -163,7 +161,7 @@ def ring_sig_correct_bp1(h, resp_json, resp_hex, txs, i_tx, inputs, outputs, det
     return str_ki, str_inp, str_out, str_commits
 
 
-def check_sig_mlsag(resp_json, sig_ind, inputs, rows, pubs, masks, message, details):
+def check_sig_mlsag(resp_json, sig_ind, inputs, rows, pubs, masks, message):
     pseudoOuts = misc_func.get_pseudo_outs(resp_json, sig_ind)
     sss = resp_json["rctsig_prunable"]["MGs"][sig_ind]["ss"]
     ss_scalar = misc_func.ss_to_scalar(sss, rows, 2)
@@ -174,51 +172,20 @@ def check_sig_mlsag(resp_json, sig_ind, inputs, rows, pubs, masks, message, deta
 
     IIv = Point(resp_json["vin"][sig_ind]["key"]["k_image"])
 
-    verified, str_out = check_MLSAG(message, PK, IIv, cc, ss_scalar, details)
-    if verified == False:
-        print("Signatures dont match! Verify this block")
-        print(
-            "Potential inflation in MLSAG ring signature! Please verify what is happening!"
-        )
-        with open("error.txt", "a+") as file1:
-            # Writing data to a file
-            file1.write(str(resp_json))
-            file1.write(
-                "\nPotential inflation in MLSAG ring signature! Please verify what is happening!"
-            )
-        raise Exception("ring_signature_failure")
-
-    return str_out
+    return check_MLSAG(message, PK, IIv, cc, ss_scalar)
 
 
 def check_sig_mlsag_bp1(
-    resp_json, sig_ind, inputs, rows, pubs, masks, message, details
+    resp_json, sig_ind, inputs, rows, pubs, masks, message 
 ):
     pseudoOuts = misc_func.get_pseudo_outs_bp1(resp_json, sig_ind)
     sss = resp_json["rctsig_prunable"]["MGs"][sig_ind]["ss"]
     ss_scalar = misc_func.ss_to_scalar(sss, rows, 2)
-
     cc = Scalar(resp_json["rctsig_prunable"]["MGs"][sig_ind]["cc"])
-
     PK = misc_func.point_matrix_mg(pubs[sig_ind], masks[sig_ind], pseudoOuts)
-
     IIv = Point(resp_json["vin"][sig_ind]["key"]["k_image"])
+    return check_MLSAG(message, PK, IIv, cc, ss_scalar)
 
-    verified, str_out = check_MLSAG(message, PK, IIv, cc, ss_scalar, details)
-    if verified == False:
-        print("Signatures dont match! Verify this block")
-        print(
-            "Potential inflation in MLSAG ring signature! Please verify what is happening!"
-        )
-        with open("error.txt", "a+") as file1:
-            # Writing data to a file
-            file1.write(str(resp_json))
-            file1.write(
-                "\nPotential inflation in MLSAG ring signature! Please verify what is happening!"
-            )
-        raise Exception("ring_signature_failure")
-
-    return str_out
 
 
 def generate_MLSAG(m, PK, sk, index):
@@ -276,26 +243,10 @@ def generate_MLSAG(m, PK, sk, index):
     return ss, cc, I0
 
 
-def check_MLSAG(m, PK, I, c, ss, details=0):
+def check_MLSAG(m, PK, I, c, ss):
     rows = len(PK)
     cols = len(PK[0])
     c_old = copy.copy(c)
-
-    str_out = "\n"
-    str_out += "--------------------------------------------------------\n"
-    str_out += "-------------Checking MLSAG Ring Signature--------------\n"
-    str_out += "--------------------------------------------------------\n"
-    str_out += "Arguments of check_ring_signature: "
-    str_out += "Prefix: " + str(m)
-    str_out += "\n"
-    str_out += "Key_image: " + str(I)
-    str_out += "\n"
-    str_out += "Public keys: " + str(PK)
-    str_out += "\n"
-    str_out += "Signature ss: " + str(ss)
-    str_out += "\n"
-    str_out += "Signature c: " + str(c)
-    str_out += "\n"
 
     i = 0
     msg = ""
@@ -304,26 +255,8 @@ def check_MLSAG(m, PK, I, c, ss, details=0):
         toHash = ""
         toHash += str(m)
 
-        str_out += "Calculating L1 = ss[i][0] * G + ci * P[i][0]   for index = " + str(
-            i
-        )
-        str_out += "\n"
-        str_out += (
-            "Calculating R = ss[i][0] * H(P[i][0]) + ci * I   for index = " + str(i)
-        )
-        str_out += "\n"
-
         L1 = ss[i][0] * df25519.G + c_old * PK[i][0]
         R = ss[i][0] * df25519.hash_to_point(str(PK[i][0])) + c_old * I
-
-        str_out += "L1 calculated for index = " + str(i)
-        str_out += "\n"
-        str_out += str(L1)
-        str_out += "\n"
-        str_out += "R calculated for index = " + str(i)
-        str_out += "\n"
-        str_out += str(R)
-        str_out += "\n"
 
         toHash += str(PK[i][0])
         toHash += str(L1)
@@ -333,34 +266,11 @@ def check_MLSAG(m, PK, I, c, ss, details=0):
         toHash += str(PK[i][1])
         toHash += str(L2)
 
-        str_out += "Calculating L2 = ss[i][1] * G + ci * P[i][1]   for index = " + str(
-            i
-        )
-        str_out += "\n"
-        str_out += "L2 calculated for index = " + str(i)
-        str_out += "\n"
-        str_out += str(L2)
-        str_out += "\n"
-
         c_old = df25519.hash_to_scalar(toHash)
         i = i + 1
-        str_out += "Calculating c_old: " + str(c_old)
-        str_out += "\n"
 
-    str_out += "Calculating c_old - c :"
-    str_out += "\n"
-    res = (c_old - c) == Scalar(0)
-    str_out += str(c_old - c)
-    str_out += "\n"
-    if res:
-        str_out += "Transaction is valid. The signature matches the data."
-    else:
-        str_out += "Transaction is invalid. The signature does not match the data."
-
-    str_out += "\n"
-    str_out += "--------------------------------------------------------"
-    str_out += "\n"
-    return res, str_out
+    return (c_old - c) == Scalar(0)
+    
 
 
 def get_tx_hash_mlsag(resp_json, resp_hex):

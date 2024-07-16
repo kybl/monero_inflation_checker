@@ -95,20 +95,5 @@ def get_pseudo_outs_bp1(resp_json, pseudo_index=0):
 
 
 def verify_ki(ki):
-    str_out = "\n"
-    str_out += "--------------------------------------------------------\n"
-    str_out += "-------------------Checking Key Image-------------------\n"
-    str_out += "--------------------------------------------------------\n"
-    if df25519.verify_subgroup(Point(str(ki))):
-        str_out += (
-            "Point " + str(ki) + " belongs to the G subgroup.\n Everything is fine."
-        )
-    else:
-        str_out += (
-            "Point "
-            + str(ki)
-            + " does not belong to the G subgroup.\n Inflation may be happening!"
-        )
-    str_out += "\n--------------------------------------------------------\n"
-
-    return str_out
+    return df25519.verify_subgroup(ki)
+    

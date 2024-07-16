@@ -491,8 +491,6 @@ def multiexp(scalars, points):
         if s.to_int()>maxscalar:
             maxscalar = s.to_int()
 
-    # import ipdb;ipdb.set_trace()
-
     groups = 0
     while maxscalar >= 2**groups:
         groups += 1
