@@ -32,10 +32,6 @@ import time
 ### Commitments 
 #--------------------------------------------------------------------------------------------
 def check_commitments(resp_json):
-    str_com = ""
-    str_com += "\n--------------------------------------------------------\n"
-    str_com += "------------------Checking Commitments------------------\n"
-    str_com += "--------------------------------------------------------\n"
     if "pseudoOuts" in resp_json["rct_signatures"]:
         Cin = Scalar(0) * df25519.G
         Cout = Scalar(0) * df25519.G
@@ -44,42 +40,19 @@ def check_commitments(resp_json):
         for i in range(len(resp_json["rct_signatures"]["outPk"])):
             Cout += Point(resp_json["rct_signatures"]["outPk"][i])
         Fee = Scalar(resp_json["rct_signatures"]["txnFee"]) * df25519.H
-
-        str_com += "Sum of Cin = " + str(Cin)
-        str_com += "\n"
-        str_com += "Sum of Cout = " + str(Cout)
-        str_com += "\n"
-        str_com += "Fee = " + str(Fee)
-        str_com += "\n"
         res = Cin - Cout - Fee
-        str_com += "Result (Cin - Cout - Fee) = " + str(res)
-        str_com += "\n"
         if res != df25519.Z:
-            str_com += "Inflation may be happening! Commitments do not match!"
-            print("Inflation may be happening! Commitments do not match!")
-            with open("error.txt", "a+") as file1:
-                # Writing data to a file
-                file1.write(str(resp_json))
-                file1.write(
-                    "\nPotential inflation in checking commitments! Please verify what is happening!"
-                )
-            raise Exception("commitments_failure")
+            return False
         else:
-            str_com += "Commitments match. No inflation is happening."
+            return True
 
     else:
-        str_com += "Commitments must match in RCTTypeFull transactions. Otherwise the MLSAG ring signature would fail."
+        # "Commitments must match in RCTTypeFull transactions. Otherwise the MLSAG ring signature would fail."
+        return True
 
-    str_com += "\n"
-    str_com += "--------------------------------------------------------"
-    str_com += "\n"
-    return str_com
+    return False 
 #--------------------------------------------------------------------------------------------
 def check_commitments_bp1(resp_json):
-    str_com = ""
-    str_com += "\n--------------------------------------------------------\n"
-    str_com += "------------------Checking Commitments------------------\n"
-    str_com += "--------------------------------------------------------\n"
     Cin = df25519.Z
     Cout = df25519.Z
     for i in range(len(resp_json["rctsig_prunable"]["pseudoOuts"])):
@@ -88,33 +61,13 @@ def check_commitments_bp1(resp_json):
         Cout += Point(resp_json["rct_signatures"]["outPk"][i])
     Fee = Scalar(resp_json["rct_signatures"]["txnFee"]) * df25519.H
 
-    str_com += "Sum of Cin = " + str(Cin)
-    str_com += "\n"
-    str_com += "Sum of Cout = " + str(Cout)
-    str_com += "\n"
-    str_com += "Fee = " + str(Fee)
-    str_com += "\n"
     res = Cin - Cout - Fee
-    str_com += "Result (Cin - Cout - Fee) = " + str(res)
-    str_com += "\n"
     if res != df25519.Z:
-        str_com += "Inflation may be happening! Commitments do not match!"
-        print("Inflation may be happening! Commitments do not match!")
-        with open("error.txt", "a+") as file1:
-            # Writing data to a file
-            file1.write(str(resp_json))
-            file1.write(
-                "\nPotential inflation in checking commitments! Please verify what is happening!"
-            )
-        raise Exception("commitments_failure")
-
+        return False
     else:
-        str_com += "Commitments match. No inflation is happening."
+        return True
 
-    str_com += "\n"
-    str_com += "--------------------------------------------------------"
-    str_com += "\n"
-    return str_com
+    return False 
 #--------------------------------------------------------------------------------------------
 ### Borromean 
 #--------------------------------------------------------------------------------------------

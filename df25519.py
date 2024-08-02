@@ -109,6 +109,9 @@ class Scalar:
     def to_int(self):
         return int.from_bytes(self.b,"little")
 
+    # Verify if Scalar is canonical (reduced)
+    def is_canonical(self):
+       return self.to_int() < l 
 
 # An element of the curve group
 class Point:
@@ -166,6 +169,19 @@ class Point:
             except Exception as inst:
                 if (y == Scalar(0)):
                     return Point(1)
+                if not (self.on_curve()):
+                # print("Doing operation with a Point not on curve.")
+                # Perform naive and slow multiplication:
+                    if isinstance(y, Scalar):
+                        if y == Scalar(0):
+                            return Point(1)
+                        Q = self.__mul__(y/Scalar(2))
+                        Q = Q.__add__(Q)
+                        if y.to_int() & 1:
+                            Q = self.__add__(Q)
+                        return Q
+                    return NotImplemented 
+
                 else:
                     return TypeError
         return NotImplemented

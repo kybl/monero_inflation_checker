@@ -393,3 +393,367 @@ def verify_v2_t6(resp_json, resp_hex, txs, i_tx, inputs, outputs):
 
     return True
 #--------------------------------------------------------------------------------------------
+# Check Points and Scalars
+#--------------------------------------------------------------------------------------------
+def check_points(points):
+    not_in_curve = []
+    for p in points:
+        if not p.on_curve():
+            not_in_curve.append(p)
+    if len(not_in_curve) == 0:
+        return True
+    else:
+        return not_in_curve
+    
+    return False
+#--------------------------------------------------------------------------------------------
+def check_scalars(scalars):
+    not_canonical = []
+    for s in scalars:
+        if not s.is_canonical():
+            not_canonical.append(s)
+    if len(not_canonical) == 0:
+        return True
+    else:
+        return not_canonical 
+    
+    return False
+#--------------------------------------------------------------------------------------------
+def precheck_tx(tx_to_check, i_tx=0):
+    if len(tx_to_check) >= 1:
+        txs = tx_to_check
+        resp_json, resp_hex = com_db.get_tx(tx_to_check, i_tx)
+    else:
+        return 0
+
+    inputs = len(resp_json["vin"])
+    outputs = len(resp_json["vout"])
+
+    if resp_json["version"] == 1:
+        precheck_v1(resp_json, resp_hex, txs, i_tx, inputs, outputs)
+
+    else:
+        # Check type
+        type_tx = resp_json["rct_signatures"]["type"]
+        if type_tx == 1 or type_tx == 2:  # RCTTypeSimple and RCTTypeFull
+            if not precheck_v2_t1_t2(resp_json, resp_hex, txs, i_tx, inputs, outputs):
+                return False
+        elif type_tx == 3 or type_tx == 4:  # RCTTypeBulletproof and RCTTypeBulletproof2
+            if not precheck_v2_t3_t4(resp_json, resp_hex, txs, i_tx, inputs, outputs):
+                return False
+        elif type_tx == 5:  # RCTTypeCLSAG
+            if not precheck_v2_t5(resp_json, resp_hex, txs, i_tx, inputs, outputs):
+                return False
+        elif type_tx == 6:  # RCTTypeBulletproofPlus
+            if not precheck_v2_t6(resp_json, resp_hex, txs, i_tx, inputs, outputs):
+                return False
+        else:
+            raise Exception
+
+    return True
+#--------------------------------------------------------------------------------------------
+def precheck_v1(resp_json, resp_hex, txs, i_tx, inputs, outputs):
+
+    for sig_ind in range(inputs):
+        Iv = Point(resp_json["vin"][sig_ind]["key"]["k_image"])
+        if not (misc_func.verify_ki(Iv)):
+            str_res = "Verification of key_image: " + str(Iv) + " failed."
+            settings_df25519.logger_inflation.critical(str_res)
+
+    pubs, _ = misc_func.get_members_and_masks_in_rings(resp_json)
+
+    points_to_check = []
+    for pi in pubs:
+        for i in pi:
+            points_to_check.append(i)
+
+    c = check_points(points_to_check)
+
+    if not c == True:
+        str_res = ("tx : "
+        + str(txs[i_tx])
+        + ", points: "
+        + str([c]))
+        settings_df25519.logger_precheck.critical(str_res)
+
+    return True
+#--------------------------------------------------------------------------------------------
+def precheck_v2_t1_t2(resp_json, resp_hex, txs, i_tx, inputs, outputs):
+    pubs, masks = misc_func.get_members_and_masks_in_rings(resp_json)
+    points_to_check = []
+
+    # Check key images 
+    for sig_ind in range(inputs):
+        Iv = Point(resp_json["vin"][sig_ind]["key"]["k_image"])
+        if not (misc_func.verify_ki(Iv)):
+            str_res = "Verification of key_image: " + str(Iv) + " failed."
+            settings_df25519.logger_precheck.critical(str_res)
+
+    for pi in pubs:
+        for i in pi:
+            points_to_check.append(i)
+
+    for mi in masks:
+        for i in mi:
+            points_to_check.append(i)
+
+    ci = check_points(points_to_check)
+
+    if not ci == True:
+        str_res = ("tx : "
+        + str(txs[i_tx])
+        + ", points: "
+        + str([ci]))
+        settings_df25519.logger_precheck.critical(str_res)
+
+    # Check rangeproofs
+    points_to_check = []
+    scalars_to_check = []
+    for sig_out in range(outputs):
+        P1, P2, bbee, bbs0, bbs1 = check_rangeproofs.get_borromean_vars(resp_json, sig_out)
+        points_to_check = P1+P2
+        scalars_to_check = [bbee] + bbs0 + bbs1
+
+        ci = check_points(points_to_check)
+        if not ci == True:
+            str_res = ("tx : "
+            + str(txs[i_tx])
+            + ", points: "
+            + str([ci]))
+            settings_df25519.logger_precheck.critical(str_res)
+
+        si = check_scalars(scalars_to_check)
+        if not si == True:
+            str_res = ("tx : "
+            + str(txs[i_tx])
+            + ", scalars: "
+            + str([si]))
+            settings_df25519.logger_precheck.critical(str_res)
+
+    points_to_check = []
+    # Check commitments 
+    if "pseudoOuts" in resp_json["rct_signatures"]:
+        for i in range(len(resp_json["rct_signatures"]["pseudoOuts"])):
+            points_to_check.append(Point(resp_json["rct_signatures"]["pseudoOuts"][i]))
+        for i in range(len(resp_json["rct_signatures"]["outPk"])):
+            points_to_check.append(Point(resp_json["rct_signatures"]["outPk"][i]))
+
+    cc = check_points(points_to_check)
+    if not cc == True:
+        str_res = ("tx : "
+        + str(txs[i_tx])
+        + ", points: "
+        + str([cc]))
+        settings_df25519.logger_precheck.critical(str_res)
+
+    return True
+#--------------------------------------------------------------------------------------------
+def precheck_v2_t3_t4(resp_json, resp_hex, txs, i_tx, inputs, outputs):
+    pubs, masks = misc_func.get_members_and_masks_in_rings(resp_json)
+    points_to_check = []
+
+    # Check key images 
+    for sig_ind in range(inputs):
+        Iv = Point(resp_json["vin"][sig_ind]["key"]["k_image"])
+        if not (misc_func.verify_ki(Iv)):
+            str_res = "Verification of key_image: " + str(Iv) + " failed."
+            settings_df25519.logger_precheck.critical(str_res)
+
+    for pi in pubs:
+        for i in pi:
+            points_to_check.append(i)
+
+    for mi in masks:
+        for i in mi:
+            points_to_check.append(i)
+
+    ci = check_points(points_to_check)
+
+    if not ci == True:
+        str_res = ("tx : "
+        + str(txs[i_tx])
+        + ", points: "
+        + str([ci]))
+        settings_df25519.logger_precheck.critical(str_res)
+
+
+    # Check rangeproofs
+    points_to_check = []
+    scalars_to_check = []
+    proofs = check_rangeproofs.get_vars_bp1(resp_json)
+    V,A,S,T1,T2,taux,mu,L,R,a,b,t = proofs
+    points_to_check += V.points + [A] + [S] + [T1] + [T2] + L.points + R.points
+    scalars_to_check = [taux] + [mu] + [a] + [b] + [t]
+
+    ci = check_points(points_to_check)
+    if not ci == True:
+        str_res = ("tx : "
+        + str(txs[i_tx])
+        + ", points: "
+        + str([ci]))
+        settings_df25519.logger_precheck.critical(str_res)
+
+    si = check_scalars(scalars_to_check)
+    if not si == True:
+        str_res = ("tx : "
+        + str(txs[i_tx])
+        + ", scalars: "
+        + str([si]))
+        settings_df25519.logger_precheck.critical(str_res)
+
+    # Check commitments 
+    points_to_check = []
+    for i in range(len(resp_json["rctsig_prunable"]["pseudoOuts"])):
+        points_to_check.append(Point(resp_json["rctsig_prunable"]["pseudoOuts"][i]))
+    for i in range(len(resp_json["rct_signatures"]["outPk"])):
+        points_to_check.append(Point(resp_json["rct_signatures"]["outPk"][i]))
+
+    cc = check_points(points_to_check)
+    if not cc == True:
+        str_res = ("tx : "
+        + str(txs[i_tx])
+        + ", points: "
+        + str([cc]))
+        settings_df25519.logger_precheck.critical(str_res)
+
+    return True
+#--------------------------------------------------------------------------------------------
+def precheck_v2_t5(resp_json, resp_hex, txs, i_tx, inputs, outputs):
+    pubs, masks = misc_func.get_members_and_masks_in_rings(resp_json)
+    points_to_check = []
+
+    # Check key images 
+    for sig_ind in range(inputs):
+        Iv = Point(resp_json["vin"][sig_ind]["key"]["k_image"])
+        if not (misc_func.verify_ki(Iv)):
+            str_res = "Verification of key_image: " + str(Iv) + " failed."
+            settings_df25519.logger_precheck.critical(str_res)
+
+    for pi in pubs:
+        for i in pi:
+            points_to_check.append(i)
+
+    for mi in masks:
+        for i in mi:
+            points_to_check.append(i)
+
+    ci = check_points(points_to_check)
+
+    if not ci == True:
+        str_res = ("tx : "
+        + str(txs[i_tx])
+        + ", points: "
+        + str([ci]))
+        settings_df25519.logger_precheck.critical(str_res)
+
+
+    # Check rangeproofs
+    points_to_check = []
+    scalars_to_check = []
+    proofs = check_rangeproofs.get_vars_bp1(resp_json)
+    V,A,S,T1,T2,taux,mu,L,R,a,b,t = proofs
+    points_to_check += V.points + [A] + [S] + [T1] + [T2] + L.points + R.points
+    scalars_to_check = [taux] + [mu] + [a] + [b] + [t]
+
+    ci = check_points(points_to_check)
+    if not ci == True:
+        str_res = ("tx : "
+        + str(txs[i_tx])
+        + ", points: "
+        + str([ci]))
+        settings_df25519.logger_precheck.critical(str_res)
+
+    si = check_scalars(scalars_to_check)
+    if not si == True:
+        str_res = ("tx : "
+        + str(txs[i_tx])
+        + ", scalars: "
+        + str([si]))
+        settings_df25519.logger_precheck.critical(str_res)
+
+    # Check commitments 
+    points_to_check = []
+    for i in range(len(resp_json["rctsig_prunable"]["pseudoOuts"])):
+        points_to_check.append(Point(resp_json["rctsig_prunable"]["pseudoOuts"][i]))
+    for i in range(len(resp_json["rct_signatures"]["outPk"])):
+        points_to_check.append(Point(resp_json["rct_signatures"]["outPk"][i]))
+
+    cc = check_points(points_to_check)
+    if not cc == True:
+        str_res = ("tx : "
+        + str(txs[i_tx])
+        + ", points: "
+        + str([cc]))
+        settings_df25519.logger_precheck.critical(str_res)
+
+    return True
+#--------------------------------------------------------------------------------------------
+def precheck_v2_t6(resp_json, resp_hex, txs, i_tx, inputs, outputs):
+    pubs, masks = misc_func.get_members_and_masks_in_rings(resp_json)
+    points_to_check = []
+
+    # Check key images 
+    for sig_ind in range(inputs):
+        Iv = Point(resp_json["vin"][sig_ind]["key"]["k_image"])
+        if not (misc_func.verify_ki(Iv)):
+            str_res = "Verification of key_image: " + str(Iv) + " failed."
+            settings_df25519.logger_precheck.critical(str_res)
+
+    for pi in pubs:
+        for i in pi:
+            points_to_check.append(i)
+
+    for mi in masks:
+        for i in mi:
+            points_to_check.append(i)
+
+    ci = check_points(points_to_check)
+
+    if not ci == True:
+        str_res = ("tx : "
+        + str(txs[i_tx])
+        + ", points: "
+        + str([ci]))
+        settings_df25519.logger_precheck.critical(str_res)
+
+
+    # Check rangeproofs
+    points_to_check = []
+    scalars_to_check = []
+    proofs = check_rangeproofs.get_vars_bp_plus(resp_json)
+    V, A, A1, B, r1, s1, d1, L, R = proofs
+    points_to_check += V.points +[A]+[A1]+[B]+L.points + R.points
+    scalars_to_check = [r1]+[s1]+[d1]
+
+    ci = check_points(points_to_check)
+    if not ci == True:
+        str_res = ("tx : "
+        + str(txs[i_tx])
+        + ", points: "
+        + str([ci]))
+        settings_df25519.logger_precheck.critical(str_res)
+
+    si = check_scalars(scalars_to_check)
+    if not si == True:
+        str_res = ("tx : "
+        + str(txs[i_tx])
+        + ", scalars: "
+        + str([si]))
+        settings_df25519.logger_precheck.critical(str_res)
+
+    # Check commitments 
+    points_to_check = []
+    for i in range(len(resp_json["rctsig_prunable"]["pseudoOuts"])):
+        points_to_check.append(Point(resp_json["rctsig_prunable"]["pseudoOuts"][i]))
+    for i in range(len(resp_json["rct_signatures"]["outPk"])):
+        points_to_check.append(Point(resp_json["rct_signatures"]["outPk"][i]))
+
+    cc = check_points(points_to_check)
+    if not cc == True:
+        str_res = ("tx : "
+        + str(txs[i_tx])
+        + ", points: "
+        + str([cc]))
+        settings_df25519.logger_precheck.critical(str_res)
+
+    return True

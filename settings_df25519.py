@@ -62,13 +62,16 @@ def setup_logger(name, log_file, level=logging.INFO):
 
     return logger
 
-global logger_basic, logger_inflation
+global logger_basic, logger_inflation, logger_precheck
 
 # Basic logger
 logger_basic = setup_logger('logger_basic', 'logger_basic.log')
 
 # Inflation logger (This file should be empty or inexistent)
 logger_inflation = setup_logger('logger_inflation', 'logger_inflation.log', logging.CRITICAL)
+
+# Precheck logger
+logger_precheck = setup_logger('logger_precheck', 'logger_precheck.log', logging.CRITICAL)
 
 #--------------------------------------------------------------------------------------------
 ### Code used to create generators 

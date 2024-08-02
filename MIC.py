@@ -40,6 +40,7 @@ def menu2():
     print("1. Verify a specific transaction")
     print("2. Verify a specific block")
     print("3. Scan blockchain")
+    print("4. Scan all Points and Scalars")
 
     val = input("Enter your choice: ")
 
@@ -70,10 +71,23 @@ def menu2():
             scan_bc.write_height(filename, str(h))
         scan_bc.start_scanning(filename, h, True)
 
+    elif val == "4":
+        print("Continue scanning...")
+        filename = "height_pc.txt"
+        if exists(filename):
+            h = int(scan_bc.read_height(filename))
+        else:
+            h = 0
+            scan_bc.write_height(filename, str(h))
+        scan_bc.start_scanning_precheck(filename, h, True)
+
     elif val == "17":
         print("Benchmarking...")
         scan_bc.txs_to_benchmark()
 
+    elif val == "18":
+        print("Problematic txs...")
+        scan_bc.problematic_txs()
 
     else:
         print("Option unavailable")
