@@ -177,18 +177,10 @@ def get_vars_bp_plus(resp_json):
     L_aux = resp_json["rctsig_prunable"]["bpp"][ind]["L"]
     R_aux = resp_json["rctsig_prunable"]["bpp"][ind]["R"]
 
-    L = PointVector()
-    for one_L_aux in L_aux:
-        L.append(Point(one_L_aux))
+    L = PointVector([Point(one_L_aux) for one_L_aux in L_aux])
+    R = PointVector([Point(one_R_aux) for one_R_aux in R_aux])
 
-    R = PointVector()
-    for one_R_aux in R_aux:
-        R.append(Point(one_R_aux))
-
-    outPk_aux = resp_json["rct_signatures"]["outPk"]
-    V = PointVector()
-    for one_outPk_aux in outPk_aux:
-        V.append(df25519.inv8 * Point(one_outPk_aux))
+    V = PointVector([df25519.inv8 * Point(one_outPk_aux) for one_outPk_aux in resp_json["rct_signatures"]["outPk"]])
 
     return [V, A, A1, B, r1, s1, d1, L, R]
 #--------------------------------------------------------------------------------------------
