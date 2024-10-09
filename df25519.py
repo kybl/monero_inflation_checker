@@ -3,7 +3,6 @@ import nacl.utils
 import binascii
 import secrets
 import sha3
-import time
 
 class Scalar:
     def __init__(self, x):
@@ -193,7 +192,6 @@ class Point:
                 return Point(1)
             else:
                 return TypeError
-        return NotImplemented
 
     def __rmul__(self, y):
         # Scalar-Point
@@ -560,8 +558,6 @@ def hash_to_scalar(data):
 def hash_to_point(hex_value):
     u = hex_to_int(cn_fast_hash(hex_value)) % q
     A = 486662
-    ma = -1 * A % q
-    ma2 = -1 * A * A % q
     sqrtm1 = sqroot(-1)
 
     w = (2 * u * u + 1) % q

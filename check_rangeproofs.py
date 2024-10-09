@@ -412,8 +412,6 @@ def check_bp(proofs):
 
     # run through each proof
     for proof in proofs:
-        hash_cache = ''
-
         V,A,S,T1,T2,taux,mu,L,R,a,b,t = proof
 
         # get size information
@@ -432,7 +430,6 @@ def check_bp(proofs):
         hash_cache = str(hash_to_scalar(strV))
         
         y = mash(str(hash_cache), str(A), str(S))
-        hash_cache = copy.copy(y)
 
         if y == Scalar(0):
             raise ArithmeticError

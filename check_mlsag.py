@@ -245,7 +245,6 @@ def generate_MLSAG(m, PK, sk, index):
 
 def check_MLSAG(m, PK, I, c, ss):
     rows = len(PK)
-    cols = len(PK[0])
     c_old = copy.copy(c)
 
     i = 0

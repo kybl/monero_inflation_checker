@@ -317,8 +317,6 @@ def check_CLSAG(msg, s, c1, D_aux, I, P, C_nonzero, C_offset):
         c = hash_to_scalar(str_hash)
         i = i + 1
 
-    c_final = c - c1
-
     if (c - c1) == Scalar(0):
         return True
 
