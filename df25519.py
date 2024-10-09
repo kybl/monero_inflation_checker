@@ -1,6 +1,7 @@
 import nacl.bindings
 import nacl.utils
 import binascii
+import secrets
 import sha3
 import time
 

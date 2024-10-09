@@ -108,7 +108,7 @@ def ring_sig_correct_bp_plus(
         Iv = Point(resp_json["vin"][sig_ind]["key"]["k_image"])
         if not (misc_func.verify_ki(Iv)):
             str_ki = "Verification of key_image: " + str(Iv) + " failed."
-            settings_df25519.logger_inflation.info(str_res)
+            settings_df25519.logger_inflation.info(str_inp)
 
     # Check ring-signatures 
     for sig_ind in range(inputs):

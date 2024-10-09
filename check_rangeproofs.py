@@ -603,8 +603,8 @@ def inner_product_bp_plus(data):
         # Random masks
         r = random_scalar()
         s = random_scalar()
-        d = random_scalar() if data.seed is None else hash_to_scalar(data.seed, "d")
-        eta = random_scalar() if data.seed is None else hash_to_scalar(data.seed, "eta")
+        d = random_scalar() if data.seed is None else hash_to_scalar(data.seed)
+        eta = random_scalar() if data.seed is None else hash_to_scalar(data.seed)
 
         data.A = (
             data.Gi[0] * r
